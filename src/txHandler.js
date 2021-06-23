@@ -1,50 +1,59 @@
 const decodeResult = (api, result) => {
-  const { dispatchInfo, dispatchError, events = [] } = result;
+  let { dispatchInfo, dispatchError, events = [] } = result;
   const success = !dispatchError;
-  const txEvents = events
-    .filter(({ event }) => !api?.events.system.ExtrinsicFailed.is(event))
-    .map(({ event }) => event);
-  const txErrors = events
-    .filter(({ event }) => api?.events.system.ExtrinsicFailed.is(event))
-    .map(({ event }) => event?.data?.error);
-  console.log({ success, events: txEvents, errors: txErrors });
-  return { success, events: txEvents, errors: txErrors };
+  let error;
+  if (dispatchError) {
+    if (dispatchError.isModule) {
+      // for module errors, we have the section indexed, lookup
+      const decoded = api.registry.findMetaError(dispatchError.asModule);
+      const { documentation, name, section } = decoded;
+
+      error = `${section}.${name}: ${documentation.join(" ")}`;
+    } else {
+      // Other, CannotLookup, BadOrigin, no extra info
+      error = dispatchError.toString();
+    }
+  }
+  events = events.filter(
+    ({ event }) => !api?.events.system.ExtrinsicFailed.is(event)
+  );
+  events.forEach(({ phase, event: { data, method, section } }) => {
+    console.log(`\t' ${phase}: ${section}.${method}:: ${data}`);
+  });
+  return { success, events, error };
 };
 
 exports.signAndSendTx = async (api, tx, signingPair) => {
   return new Promise((resolve, reject) => {
-    let cb = ({ success, events, errors }) => {
+    let cb = ({ success, events, error }) => {
       if (!success) {
-        reject(errors);
+        reject(error);
       }
       resolve(events);
     };
     let signAndSendAsync = async () => {
-      const unsub = await tx.signAndSend(
-        signingPair,
-        ({ status, ...result }) => {
-          if (status.isInBlock) {
-            const dispatchResult = decodeResult(api, result);
-            console.log(
-              `Transaction ${
-                tx.meta.name
-              }(${tx.args.toString()}) included at blockHash ${
-                status.asInBlock
-              } [success = ${dispatchResult.success}]`
-            );
-            console.log(result);
-            cb && cb({ ...dispatchResult });
-          } else if (status.isBroadcast) {
-            console.log("Transaction broadcasted.");
-          } else if (status.isFinalized) {
-            unsub();
-          } else if (status.isReady) {
-            console.log("Transaction isReady.");
-          } else {
-            console.log(`Other status ${status}`);
-          }
+      const unsub = await tx.signAndSend(signingPair, (callResult) => {
+        const { status, ...result } = callResult;
+        if (status.isInBlock) {
+          const dispatchResult = decodeResult(api, result);
+          console.log(
+            `Transaction ${
+              tx.meta.name
+            }(${tx.args.toString()}) included at blockHash ${
+              status.asInBlock
+            } [success = ${dispatchResult.success}]`
+          );
+          cb && cb({ ...dispatchResult });
+        } else if (status.isBroadcast) {
+          console.log("Transaction broadcasted.");
+        } else if (status.isFinalized) {
+          unsub();
+        } else if (status.isReady) {
+          console.log("Transaction isReady.");
+        } else {
+          console.log(`Other status ${status}`);
         }
-      );
+      });
     };
     return signAndSendAsync();
   });

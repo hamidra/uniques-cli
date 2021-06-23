@@ -14,23 +14,23 @@ program.version("0.0.1");
 program
   .command("mint")
   .description("create an instance")
-  .requiredOption("-c, --classId <classId>", "the classId of the asset")
   .requiredOption(
-    "-i, --instanceId <instanceId>",
-    "the instanceId of the asset"
+    "--classId <classId>",
+    "the classId for an asset of the asset"
   )
+  .requiredOption("--instanceId <instanceId>", "the instanceId of the asset")
   .requiredOption(
-    "-o, --owner <ownerAddr>",
+    "--owner <ownerAddr>",
     "the address of the initial owner of the asset"
   )
   .action(async (options) => {
     try {
       const { classId, instanceId, ownerAddr } = options;
-      let result = await uniques.mint(classId, instanceId, ownerAddr);
-      console.log(result);
+      let events = await uniques.mint(classId, instanceId, ownerAddr);
+      console.log("call succeeded");
       process.exit(0);
     } catch (error) {
-      console.log(error);
+      console.log(`call failed with error: \n\t ${error}`);
       process.exit(1);
     }
   });
@@ -38,9 +38,9 @@ program
 program
   .command("create")
   .description("create an asset class")
-  .requiredOption("-c, --classId <classId>", "the classId of the asset")
+  .requiredOption("--classId <classId>", "the classId of the asset")
   .requiredOption(
-    "-o, --owner <ownerAddr>",
+    "--owner <ownerAddr>",
     "the address of the admin/owner of the asset"
   )
   .action((options) => {
