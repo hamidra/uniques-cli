@@ -1,0 +1,25 @@
+{
+  "name": "uniquesCLI",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@polkadot/api": "^4.15.1",
+    "@polkadot/keyring": "^6.9.1",
+    "@polkadot/util-crypto": "^6.9.1",
+    "commander": "^7.2.0",
+    "yargs": "^17.0.1"
+  },
+  "devDependencies": {
+    "prettier": "^2.3.1"
+  },
+  "bin": {
+    "uniques": "./index.js"
+  }
+}
