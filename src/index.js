@@ -11,6 +11,7 @@ const uniques = require("./uniques");
 
 program.version("0.0.1");
 
+// mint
 program
   .command("mint")
   .description("create an instance")
@@ -25,8 +26,8 @@ program
   )
   .action(async (options) => {
     try {
-      const { classId, instanceId, ownerAddr } = options;
-      let events = await uniques.mint(classId, instanceId, ownerAddr);
+      const { classId, instanceId, owner } = options;
+      let events = await uniques.mint(classId, instanceId, owner);
       console.log("call succeeded");
       process.exit(0);
     } catch (error) {
@@ -35,16 +36,48 @@ program
     }
   });
 
+// create
 program
   .command("create")
   .description("create an asset class")
   .requiredOption("--classId <classId>", "the classId of the asset")
   .requiredOption(
-    "--owner <ownerAddr>",
-    "the address of the admin/owner of the asset"
+    "--admin <adminAddr>",
+    "the address of the admin of the asset class"
   )
-  .action((options) => {
-    console.log(options);
+  .action(async (options) => {
+    try {
+      const { classId, admin } = options;
+      let events = await uniques.create(classId, admin);
+      console.log("call succeeded");
+      process.exit(0);
+    } catch (error) {
+      console.log(`call failed with error: \n\t ${error}`);
+      process.exit(1);
+    }
+  });
+
+// freeze
+program
+  .command("freeze")
+  .description(
+    "freeze an asset class or an instance of the class if instanceId is specified"
+  )
+  .requiredOption("--classId <classId>", "the classId of the asset")
+  .option(
+    "--instanceId <instanceId>",
+    "the instanceId of the asset. if specified only the specific instance will be frozen"
+  )
+  .action(async (options) => {
+    try {
+      const { classId, instanceId } = options;
+      let events = await uniques.freeze(classId, instanceId);
+      console.log("call succeeded");
+      process.exit(0);
+    } catch (error) {
+      console.log(`call failed with error: \n\t ${error}`);
+      process.exit(1);
+    }
   });
 
 program.parseAsync().catch((error) => console.log("error"));
