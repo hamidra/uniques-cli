@@ -32,28 +32,33 @@ exports.signAndSendTx = async (api, tx, signingPair) => {
       resolve(events);
     };
     let signAndSendAsync = async () => {
-      const unsub = await tx.signAndSend(signingPair, (callResult) => {
-        const { status, ...result } = callResult;
-        if (status.isInBlock) {
-          const dispatchResult = decodeResult(api, result);
-          console.log(
-            `Transaction ${
-              tx.meta.name
-            }(${tx.args.toString()}) included at blockHash ${
-              status.asInBlock
-            } [success = ${dispatchResult.success}]`
-          );
-          cb && cb({ ...dispatchResult });
-        } else if (status.isBroadcast) {
-          console.log("Transaction broadcasted.");
-        } else if (status.isFinalized) {
-          unsub();
-        } else if (status.isReady) {
-          console.log("Transaction isReady.");
-        } else {
-          console.log(`Other status ${status}`);
-        }
-      });
+      try {
+        const unsub = await tx.signAndSend(signingPair, (callResult) => {
+          const { status, ...result } = callResult;
+          if (status.isInBlock) {
+            const dispatchResult = decodeResult(api, result);
+            console.log(
+              `Transaction ${
+                tx.meta.name
+              }(${tx.args.toString()}) included at blockHash ${
+                status.asInBlock
+              } [success = ${dispatchResult.success}]`
+            );
+            cb && cb({ ...dispatchResult });
+          } else if (status.isBroadcast) {
+            console.log("Transaction broadcasted.");
+          } else if (status.isFinalized) {
+            unsub();
+          } else if (status.isReady) {
+            console.log("Transaction isReady.");
+          } else {
+            console.log(`Other status ${status}`);
+          }
+        });
+      } catch (err) {
+        // the call has failed off chain with an error
+        cb({ success: false, events: [], error: err });
+      }
     };
     return signAndSendAsync();
   });
